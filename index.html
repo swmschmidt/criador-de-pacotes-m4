@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Comandos</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid black; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .avisos { color: red; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h2>Gerador de Comandos</h2>
+    <h3>Adicionar Comando</h3>
+    <label for="tipo">Tipo:</label>
+    <select id="tipo"></select>
+    
+    <label for="objeto">Nome: </label>
+    <input type="text" id="objeto">
+    
+    <button onclick="adicionarComando()">Adicionar</button>
+    
+    <h3>Comandos Gerados</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Tipo</th>
+                <th>Nome</th>
+                <th>Comando</th>
+                <th>Ação</th>
+            </tr>
+        </thead>
+        <tbody id="tabela-comandos"></tbody>
+    </table>
+    
+    <div class="avisos" id="avisos"></div>
+        
+    <label for="iniciais">Iniciais do seu nome:</label>
+    <input type="text" id="iniciais" maxlength="3">
+    
+    <label for="redmine">Redmine:</label>
+    <input type="number" id="redmine" placeholder="0000">
+    
+    <label for="data">Data:</label>
+    <input type="date" id="data">
+
+    <button onclick="gerarTXT()">Gerar TXT</button>
+    
+    <script>
+        const tipos = [
+            "MENU OPTION", "BUSINESS PROCESS", "META4OBJECT", "NODE STRUCTURE", "PRESENTATION",
+            "CASE MODULE", "LOGICAL TABLE", "EXTENDED TYPE", "REPORT", "FORMAT", "ITEM",
+            "PROJECT_TASK_PARAM", "TRUNCATE TABLE", "COPY TABLE", "CREATE_EXE_DIF_SCRIPT",
+            "REAL OBJECT", "APPLICATION PARAMS", "APP_ROLE", "RSM", "EXTENDED FUNCTION", "SENTENCE"
+        ];
+        
+        const tipoSelect = document.getElementById("tipo");
+        tipos.forEach(tipo => {
+            let option = document.createElement("option");
+            option.value = tipo;
+            option.textContent = tipo;
+            tipoSelect.appendChild(option);
+        });
+        
+        document.getElementById("data").valueAsDate = new Date();
+        
+        let comandos = [];
+        function adicionarComando() {
+            const tipo = document.getElementById("tipo").value;
+            const objeto = document.getElementById("objeto").value.trim();
+            const avisos = document.getElementById("avisos");
+            
+            if (!objeto) {
+                avisos.textContent = "O nome do objeto não pode estar vazio.";
+                return;
+            }
+            
+            const comando = `TRANSFER "${tipo}"."${objeto}" FROM ORIGIN TO DESTINATION\\`;
+            if (comandos.some(c => c.tipo === tipo && c.objeto === objeto)) {
+                return;
+            }
+            
+            comandos.push({ tipo, objeto, comando });
+            atualizarTabela();
+            verificarDependencias();
+        }
+        
+        function atualizarTabela() {
+            const tabela = document.getElementById("tabela-comandos");
+            tabela.innerHTML = "";
+
+            const ordem = ["LOGICAL TABLE", "CREATE_EXE_DIF_SCRIPT"];
+            const comandosOrdenados = [...comandos].sort((a, b) => {
+                const indexA = ordem.indexOf(a.tipo);
+                const indexB = ordem.indexOf(b.tipo);
+                if (indexA === -1 && indexB === -1) return 0;
+                if (indexA === -1) return -1;
+                if (indexB === -1) return 1;
+                return indexA - indexB;
+            });
+
+            comandosOrdenados.forEach((c, index) => {
+                let row = tabela.insertRow();
+                row.innerHTML = `<td>${c.tipo}</td><td>${c.objeto}</td><td>${c.comando}</td><td><button onclick="removerComando(${index})">Remover</button></td>`;
+            });
+        }
+        
+        function removerComando(index) {
+            comandos.splice(index, 1);
+            atualizarTabela();
+            verificarDependencias();
+        }
+        
+        function verificarDependencias() {
+            const avisos = document.getElementById("avisos");
+            avisos.innerHTML = "";
+            const tiposPresentes = comandos.map(c => c.tipo);
+            const objetosPresentes = comandos.map(c => c.objeto);
+            
+            const dependencias = [
+                ["META4OBJECT", "NODE STRUCTURE"],
+                ["MENU OPTION", "BUSINESS PROCESS"],
+                ["CREATE_EXE_DIF_SCRIPT", "LOGICAL TABLE"],
+                ["CASE MODULE", "LOGICAL TABLE"]
+            ];
+            
+            dependencias.forEach(([primario, dependente]) => {
+                comandos.forEach(c => {
+                    if (c.tipo === primario && !tiposPresentes.includes(dependente)) {
+                        avisos.innerHTML += `<p>Atenção - ${primario} ${c.objeto} não tem ${dependente} associado - Ignore se estiver certo. Ou clique no botão para adicionar um ${dependente} com o mesmo nome <button onclick="adicionarDependencia('${dependente}', '${c.objeto}')">Adicionar ${dependente}</button></p>`;
+                    }
+                    if (c.tipo === dependente && !tiposPresentes.includes(primario)) {
+                        avisos.innerHTML += `<p>Atenção - ${dependente} ${c.objeto} não tem ${primario} associado - Ignore se estiver certo. Ou clique no botão para adicionar um ${primario} com o mesmo nome <button onclick="adicionarDependencia('${primario}', '${c.objeto}')">Adicionar ${primario}</button></p>`;
+                    }
+                });
+            });
+        }
+
+        function adicionarDependencia(tipo, objeto) {
+            comandos.push({ tipo, objeto, comando: `TRANSFER "${tipo}"."${objeto}" FROM ORIGIN TO DESTINATION\\` });
+            atualizarTabela();
+            verificarDependencias();
+        }
+        
+        function gerarTXT() {
+            const iniciais = document.getElementById("iniciais").value.toUpperCase();
+            const redmine = document.getElementById("redmine").value || "0000";
+            const data = document.getElementById("data").value.replace(/-/g, "");
+            const avisos = document.getElementById("avisos");
+
+            if (!iniciais) {
+                alert("As iniciais não podem estar vazias.");
+                return;
+            }
+
+            const conteudo = comandos.map(c => c.comando).join("\n");
+            const nomeArquivo = `${data}-${redmine}-01-${iniciais}.txt`;
+            
+            const blob = new Blob([conteudo], { type: "text/plain" });
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = nomeArquivo;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    </script>
+    <footer style="text-align: left; margin-top: 20px; font-size: 0.5em; color: gray;">
+        Versão 1. Feito por Samuel Schmidt, Fevereiro/2025
+    </footer>
+</body>
+</html>
