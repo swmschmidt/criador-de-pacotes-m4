@@ -48,17 +48,36 @@
     <input type="date" id="data">
 
     <button onclick="gerarTXT()">Gerar TXT</button>
+    <button onclick="geralExcel()">Gerar Excel</button>
     
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
     <script>
-        const tipos = [
-            "MENU OPTION", "BUSINESS PROCESS", "META4OBJECT", "NODE STRUCTURE", "PRESENTATION",
-            "CASE MODULE", "LOGICAL TABLE", "EXTENDED TYPE", "REPORT", "FORMAT", "ITEM",
-            "PROJECT_TASK_PARAM", "TRUNCATE TABLE", "COPY TABLE", "CREATE_EXE_DIF_SCRIPT",
-            "REAL OBJECT", "APPLICATION PARAMS", "APP_ROLE", "RSM", "EXTENDED FUNCTION", "SENTENCE"
-        ];
+        const tipos = new Map([
+                ["MENU OPTION", 1],
+                ["BUSINESS PROCESS", 2],
+                ["META4OBJECT", 3],
+                ["NODE STRUCTURE", 4],
+                ["PRESENTATION", 5],
+                ["CASE MODULE", 6], 
+                ["LOGICAL TABLE", 7],
+                ["EXTENDED TYPE", 8],
+                ["REPORT", 9],
+                ["FORMAT", 10],
+                ["ITEM", 11],
+                ["PROJECT_TASK_PARAM", 12],
+                ["TRUNCATE TABLE", 13],
+                ["COPY TABLE", 14],
+                ["CREATE_EXE_DIF_SCRIPT", 15],
+                ["REAL OBJECT", 16],
+                ["APPLICATION PARAMS", 17],
+                ["APP_ROLE", 18],
+                ["RSM", 19],
+                ["EXTENDED FUNCTION", 20],
+                ["SENTENCE", 21]
+            ])
         
         const tipoSelect = document.getElementById("tipo");
-        tipos.forEach(tipo => {
+        tipos.forEach((id, tipo) => {
             let option = document.createElement("option");
             option.value = tipo;
             option.textContent = tipo;
@@ -166,6 +185,37 @@
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
+        }
+
+        function geralExcel() {
+            const iniciais = document.getElementById("iniciais").value.toUpperCase();
+            const redmine = document.getElementById("redmine").value || "0000";
+            const data = document.getElementById("data").value.replace(/-/g, "");
+
+            const matrizComandos = comandos.map(objeto => Object.values(objeto));
+            
+            const conteudo = [ 
+                ["ID_OBJ", "DESCRIÇÃO", "TIPO", "OBJETO", "COMANDO"] 
+            ]; 
+
+            matrizComandos.forEach(arr => {
+                arr.splice(0, 0, tipos.get(arr[0]));
+                arr.splice(1, 0, arr[1]);
+                conteudo.push(arr);
+            })
+            console.log(conteudo);
+
+            const worksheet = XLSX.utils.aoa_to_sheet(conteudo); 
+            worksheet['!cols'] = [
+                { wch: 10 },
+                { wch: 20 }, 
+                { wch: 20 },
+                { wch: 40 },
+                { wch: 100 },
+            ];
+            const workbook = XLSX.utils.book_new(); 
+            XLSX.utils.book_append_sheet(workbook, worksheet, "OBJ"); 
+            XLSX.writeFile(workbook, `${data}-${redmine}-01-${iniciais}.xls`, { compression: true });
         }
     </script>
     <footer style="text-align: left; margin-top: 20px; font-size: 0.5em; color: gray;">
