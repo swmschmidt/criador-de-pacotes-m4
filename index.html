@@ -196,6 +196,11 @@
             const redmine = document.getElementById("redmine").value || "0000";
             const data = document.getElementById("data").value.replace(/-/g, "");
 
+            if (!iniciais) {
+                alert("As iniciais não podem estar vazias.");
+                return;
+            }
+
             const matrizComandos = comandos.map(objeto => Object.values(objeto));
             
             const conteudo = [ 
