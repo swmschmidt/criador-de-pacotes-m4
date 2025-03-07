@@ -37,6 +37,10 @@
     </table>
     
     <div class="avisos" id="avisos"></div>
+
+    <label for="pasteData">Se preferir, cole os dados copiados do Excel:</label>
+    <textarea id="pasteData" rows="6" style="width: 100%;"></textarea>
+    <button onclick="processarColagem()">Processar Colagem</button>
         
     <label for="iniciais">Iniciais do seu nome:</label>
     <input type="text" id="iniciais" maxlength="3">
@@ -216,6 +220,41 @@
             const workbook = XLSX.utils.book_new(); 
             XLSX.utils.book_append_sheet(workbook, worksheet, "OBJ"); 
             XLSX.writeFile(workbook, `${data}-${redmine}-01-${iniciais}.xls`, { compression: true });
+        }
+
+        function processarColagem() {
+            const pasteData = document.getElementById("pasteData").value.trim();
+            const rows = pasteData.split("\n");
+
+            if (rows.length === 0) {
+                alert("Por favor, cole os dados primeiro.");
+                return;
+            }
+
+            rows.forEach(row => {
+                const cols = row.split("\t"); 
+                if (cols.length < 2) return; 
+
+                const tipo = cols[0].trim();
+                const objeto = cols[1].trim();
+
+                if (!tipo || !objeto) {
+                    alert("Dados incompletos na colagem.");
+                    return;
+                }
+
+                
+                const comando = `TRANSFER "${tipo}"."${objeto}" FROM ORIGIN TO DESTINATION\\`;
+
+                if (!comandos.some(c => c.tipo === tipo && c.objeto === objeto)) {
+                    comandos.push({ tipo, objeto, comando });
+                }
+            });
+
+            atualizarTabela(); 
+            verificarDependencias(); 
+
+            document.getElementById("pasteData").value = ""; 
         }
     </script>
     <footer style="text-align: left; margin-top: 20px; font-size: 0.5em; color: gray;">
