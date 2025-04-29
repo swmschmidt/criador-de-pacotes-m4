@@ -53,6 +53,7 @@
 
     <button onclick="gerarTXT()">Gerar TXT</button>
     <button onclick="geralExcel()">Gerar Excel</button>
+    <button onclick="gerarSelectsSQL()">Gerar Selects SQL</button>
     
     <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
     <script>
@@ -256,11 +257,45 @@
                 }
             });
 
+            
             atualizarTabela(); 
             verificarDependencias(); 
 
             document.getElementById("pasteData").value = ""; 
         }
+
+        function gerarSelectsSQL() {
+            const selects = comandos.map(c => {
+                switch (c.tipo) {
+                    case "PRESENTATION":
+                        return `SELECT * FROM M4RPT_PRESENTATION WHERE ID_PRESENTATION = '${c.objeto}'`;
+                    case "NODE STRUCTURE":
+                        return `SELECT * FROM M4RCH_TIS_INHERIT WHERE ID_TI = '${c.objeto}'`;
+                    case "META4OBJECT":
+                        return `SELECT * FROM M4RCH_T3S WHERE ID_T3 = '${c.objeto}'`;
+                    case "REPORT":
+                        return `SELECT * FROM M4RRP_REPORTS WHERE ID_REPORT = '${c.objeto}'`;
+                    case "LOGICAL TABLE":
+                        return `SELECT * FROM M4RDC_REAL_OBJECTS WHERE ID_OBJECT = '${c.objeto}'`;
+                    default:
+                        return null;
+                }
+            }).filter(Boolean);
+
+            if (selects.length === 0) {
+                alert("Nenhum comando compatível para gerar SELECT SQL.");
+                return;
+            }
+
+                const sqlConteudo = selects.join('\n\n/\n\n');
+                const blob = new Blob([sqlConteudo], { type: "text/plain;charset=utf-8" });
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(blob);
+                a.download = "selects.sql.txt";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
     </script>
     <footer style="text-align: left; margin-top: 20px; font-size: 0.5em; color: gray;">
         Versão 1. Feito por Samuel Schmidt, Fevereiro/2025
