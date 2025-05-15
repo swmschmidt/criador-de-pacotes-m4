@@ -277,6 +277,12 @@
                         return `SELECT * FROM M4RRP_REPORTS WHERE ID_REPORT = '${c.objeto}'`;
                     case "LOGICAL TABLE":
                         return `SELECT * FROM M4RDC_REAL_OBJECTS WHERE ID_OBJECT = '${c.objeto}'`;
+                    case "FORMAT":
+                        return `SELECT * FROM M4RPT_FORMATS WHERE ID_FORMAT = '${c.objeto}'`;
+                    case "LOGICAL TABLE":
+                        return `SELECT * FROM M4RDD_LOGIC_OBJECT WHERE ID_OBJECT = '${c.objeto}'`;
+                    case "CASE MODULE":
+                        return `SELECT * FROM M4RDD_CASE_MODULES WHERE ID_MODULE = '${c.objeto}'`;
                     default:
                         return null;
                 }
